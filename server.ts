@@ -13,18 +13,12 @@ import {
   editUser,
   editUserProfile,
 } from "./Controller/userControl";
-import { likenews, disLike } from "./Controller/likeControler";
 import {
   authenticateUser,
   checkAdminRole,
   checkEditorRole,
   checkVisitorRole,
 } from "./middleware/midd";
-import {
-  commentNews,
-  getCommentsNews,
-  deleteComment,
-} from "./Controller/commentControler";
 import upload from "./multer";
 
 const app = express();
@@ -54,6 +48,7 @@ app.put(
 // news apis
 app.post(
   "/news",
+  authenticateUser,checkAdminRole,checkEditorRole,
   upload.fields([{ name: "images" }, { name: "videos" }]),
   createNews
 );
