@@ -4,8 +4,12 @@ import jwt from 'jsonwebtoken';
 import '../db';
 import User from '../models/User';
 import dotenv from 'dotenv'
+import redisClient from '../redis';
+
+
 
 dotenv.config({ path: './config.env' });
+
 
 
 
@@ -33,29 +37,34 @@ export const register = async (req: Request, res: Response) => {
     }
   }
 
-  export const login = async (req: Request, res: Response) =>{
+  export const login = async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;
-
+  
       const user = await User.findOne({ where: { email } });
       if (!user) {
         return res.status(401).json({ message: 'Invalid email or password' });
       }
+  
       const match = await bcrypt.compare(password, user.password);
       if (!match) {
         return res.status(401).json({ message: 'Invalid email or password' });
       }
-
+  
       const token = jwt.sign({ id: user.id, role: user.role }, process.env.ACCESS_TOKEN!, {
         expiresIn: '10h',
       });
-
+      const userId = user.id.toString();
+      await redisClient.set(userId,token);
+  
+      
+  
       return res.status(200).json({ token });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: 'Internal server error' });
-    }
-  }
+    } 
+  };
 
 
 export default { register,login};

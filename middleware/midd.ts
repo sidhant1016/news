@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv'
 import User from '../models/User';
+import redisClient from "../redis"
 
 dotenv.config({ path: './config.env' });
 
@@ -10,37 +11,45 @@ declare global {
       interface Request {
         user?: any;
         
+        
       }
     }
   }
 
+
+
   
   // Middleware to authenticate  user
-export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const token = req.headers.authorization?.split(' ')[1];
-    if (!token) {
-      return res.status(401).json({ message: 'Authorization header missing' });
+  export const authenticateUser = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const token = req.headers.authorization?.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ message: 'Authorization header missing' });
+      }
+  
+      const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN!) as jwt.JwtPayload;
+      req.user = decodedToken;
+  
+      // Check if userId is present in Redis
+      const userId = decodedToken.userId;
+      const isUserIdPresent = await redisClient.exists(userId);
+      if (!isUserIdPresent) {
+        return res.status(401).json({ message: 'User not found' });
+      }
+  
+      // Check if token is present in Redis
+      const redisToken = await redisClient.get(userId);
+      if (redisToken !== token) {
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+  
+      next();
+    } catch (error) {
+      console.error(error);
+      return res.status(401).json({ message: 'Invalid token' });
     }
-
-    const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN!);
-    req.user = decodedToken;
-
-    
-    // check kro user exist krta hai ku nhi 
-
-    if (!req.user) {
-      return res.status(401).json({ message: 'User not found' });
-    }
-   
-
-    next();
-  } catch (error) {
-    console.error(error);
-    return res.status(401).json({ message: 'Invalid token' });
-  }
-};
-
+  };
+  
   
   
   // check if the user is an admin
@@ -69,3 +78,4 @@ export const authenticateUser = async (req: Request, res: Response, next: NextFu
   };
 
 export default { authenticateUser, checkAdminRole,checkEditorRole,checkVisitorRole}
+

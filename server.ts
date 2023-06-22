@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
-import sequelize from "./db";
+import "./db";
+import "./redis";
 import { register, login } from "./Controller/auth";
 import {
   createNews,
@@ -27,7 +28,7 @@ import {
 import upload from "./multer";
 
 const app = express();
-const port = 2222;
+const port = 7878;
 
 // Middleware
 app.use(express.json());
@@ -53,9 +54,6 @@ app.put(
 // news apis
 app.post(
   "/news",
-  authenticateUser,
-  checkAdminRole,
-  checkEditorRole,
   upload.fields([{ name: "images" }, { name: "videos" }]),
   createNews
 );
@@ -76,20 +74,7 @@ app.delete(
   deleteNews
 );
 
-// like and dislike apis hai ye
 
-app.post("/news/like/:newsId", authenticateUser, checkVisitorRole, likenews);
-app.delete("/like/:likeId", authenticateUser, disLike);
-
-// comments api hai
-app.post(
-  "/news/:newsId/comment",
-  authenticateUser,
-  checkVisitorRole,
-  commentNews
-);
-app.get("/news/:newsId/comments", authenticateUser, getCommentsNews);
-app.delete("/news/:id", authenticateUser, deleteComment);
 
 // Start the server
 app.listen(port, () => {

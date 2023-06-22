@@ -1,9 +1,33 @@
 import { Request, Response } from 'express';
 import bcrypt from 'bcrypt';
 import User from '../models/User';
+import Joi from "joi"
+
+// Define Joi schemas for  validation
+const createUserSchema = Joi.object({
+  name: Joi.string().required(),
+  email: Joi.string().email().required(),
+  password: Joi.string().required(),
+  role: Joi.string().valid('admin', 'editor', 'visitor').required(),
+});
+
+const editUserSchema = Joi.object({
+  name: Joi.string().required(),
+  email: Joi.string().email().required(),
+  role: Joi.string().valid('admin', 'editor', 'visitor').required(),
+});
+
+const editUserProfileSchema = Joi.object({
+  name: Joi.string().required(),
+  email: Joi.string().email().required(),
+});
 
   export const createUser = async (req: Request, res: Response)=> {
     try {
+      const{error} = createUserSchema.validate(req.body)
+      if(error){
+        return res.status(400).json({ message: error.details[0].message });
+      } 
 
       const { name, email, password, role } = req.body;
 
@@ -30,8 +54,11 @@ import User from '../models/User';
 
   export const editUser= async(req: Request, res: Response)=> {
     try {
-  
       const { userId } = req.params;
+      const { error } = editUserSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ message: error.details[0].message });
+      }
       const { name, email, role } = req.body;
 
       const user = await User.findByPk(userId);
@@ -50,15 +77,20 @@ import User from '../models/User';
     }
   }
 
-  export const editUserProfile = async(req: Request, res: Response)=> {
+  export const editUserProfile = async (req: Request, res: Response) => {
     try {
       const userId = parseInt(String(req.params.userId), 10);
-      const { name, email } = req.body;
-
+      const { error } = editUserProfileSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ message: error.details[0].message });
+      }
+  
       if (isNaN(userId)) {
         return res.status(400).json({ message: 'Invalid userId' });
       }
-
+  
+      const { name, email } = req.body; // Add variable declaration here
+  
       const user = await User.findByPk(userId);
       if (!user) {
         return res.status(404).json({ message: 'User not found' });
@@ -66,13 +98,20 @@ import User from '../models/User';
       user.name = name;
       user.email = email;
       await user.save();
-
-      return res.status(200).json({ message:"edit profile successful"});
+  
+      return res.status(200).json({ message: "edit profile successful" });
     } catch (error) {
       console.error(error);
       return res.status(500).json({ message: 'Internal server error' });
     }
-  }
+  };
+  
+  
+  export default { createUser, editUser, editUserProfile };
+  
+  
+  
+  
+  
 
 
-export default { createUser, editUser, editUserProfile };

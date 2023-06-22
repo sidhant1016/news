@@ -1,14 +1,16 @@
-import {Sequelize} from 'sequelize';
+import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: './config.env' });
 
+// Connect to PostgreSQL
 const sequelize = new Sequelize(
   `postgres://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT}/${process.env.PGDATABASE}`,
-  { dialect: 'postgres', logging: false  }
-)
+  { dialect: 'postgres', logging: false }
+);
 
-sequelize.sync({ force: false })
+sequelize
+  .sync({ force: false })
   .then(() => {
     console.log('All models were synchronized successfully.');
   })
@@ -25,4 +27,5 @@ sequelize
     console.error('Unable to connect to the database:', err);
   });
 
-export default sequelize;
+ 
+export default sequelize ;
